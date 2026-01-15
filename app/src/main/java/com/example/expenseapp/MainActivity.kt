@@ -48,13 +48,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting() {
-
-}
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    Greeting()
+fun Preview() {
+    AddScreen()
+
 }
