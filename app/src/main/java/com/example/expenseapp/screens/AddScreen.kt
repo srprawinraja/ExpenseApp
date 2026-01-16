@@ -1,17 +1,12 @@
 package com.example.expenseapp.screens
 
 import android.Manifest
-import android.R
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,55 +16,58 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.expenseapp.components.BottomSheetSelector
 import com.example.expenseapp.components.CustomTextFieldComponent
 import com.example.expenseapp.utils.createImageUri
-import java.io.File
+import com.example.expenseapp.viewmodels.AddScreenViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.collections.mutableListOf
 
 @Composable
-fun AddScreen (){
+fun AddScreen(addScreenViewModel: AddScreenViewModel) {
+
+    val bottomUiData = addScreenViewModel.bottomScreenUiState.collectAsState().value
     val context = LocalContext.current
     val current = LocalDateTime.now()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val formatted = current.format(formatter)
-    var date by remember { mutableStateOf(formatted) }
-    var title by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var account by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var date = remember { mutableStateOf(formatted) }
+    var title = remember { mutableStateOf("") }
+    var amount = remember { mutableStateOf("") }
+    var description = remember { mutableStateOf("") }
     var isIncomeButtonClicked by remember { mutableStateOf(true) }
+    val categoryName = remember { mutableStateOf("") }
+    val accountName =  remember { mutableStateOf("") }
+    val categoryId = remember { mutableStateOf("") }
+    val accountId = remember { mutableStateOf("") }
+    val onBottomItemClickState = remember { mutableStateOf<(String, String) -> Unit>({ _, _ -> }) }
+
+    val showBottomScreen = remember {
+        mutableStateOf(false)
+    }
     var lastAddedImageUrl by remember { mutableStateOf<Uri?>(null) }
     val uploadedUrls = remember { mutableStateListOf<Uri>() }
 
@@ -78,7 +76,7 @@ fun AddScreen (){
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-           uploadedUrls.add(lastAddedImageUrl!!)
+            uploadedUrls.add(lastAddedImageUrl!!)
         }
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -95,7 +93,8 @@ fun AddScreen (){
 
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
             .statusBarsPadding()
             .padding(20.dp)
     ) {
@@ -109,7 +108,7 @@ fun AddScreen (){
                     isIncomeButtonClicked = !isIncomeButtonClicked
                 },
                 colors = ButtonColors(
-                    containerColor = if(isIncomeButtonClicked) Color.Black
+                    containerColor = if (isIncomeButtonClicked) Color.Black
                     else Color.White,
                     contentColor = Color.Cyan,
                     disabledContentColor = Color.Cyan,
@@ -124,7 +123,7 @@ fun AddScreen (){
                     isIncomeButtonClicked = !isIncomeButtonClicked
                 },
                 colors = ButtonColors(
-                    containerColor = if(isIncomeButtonClicked) Color.White
+                    containerColor = if (isIncomeButtonClicked) Color.White
                     else Color.Black,
                     contentColor = Color.Cyan,
                     disabledContentColor = Color.Cyan,
@@ -139,73 +138,95 @@ fun AddScreen (){
 
         Row {
             Text("Date", color = Color.Black, modifier = Modifier.width(100.dp))
-            Spacer(modifier=Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
                 date,
-                onDateChange = { newDate -> date = newDate },
+                onDateChange = { newDate -> date.value = newDate },
                 placeholder = "yyyy-MM-dd HH:mm:ss",
             )
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
         Row {
             Text("Title", color = Color.Black, modifier = Modifier.width(100.dp))
-            Spacer(modifier=Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
                 title,
-                onDateChange = { newDate -> title = newDate },
+                onDateChange = { newTitle -> title.value = newTitle },
             )
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Row {
             Text("Amount", color = Color.Black, modifier = Modifier.width(100.dp))
-            Spacer(modifier=Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
                 amount,
-                onDateChange = { newDate -> amount = newDate },
+                onDateChange = { newAmount -> amount.value = newAmount },
             )
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Row {
             Text("Category", color = Color.Black, modifier = Modifier.width(100.dp))
-            Spacer(modifier=Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                category,
-                onDateChange = { newDate -> category = newDate },
-                disable = true
+                categoryName,
+                onDateChange = { newCategory -> categoryName.value = newCategory },
+                onTextFieldClicked = {
+                    onBottomItemClickState.value = { id, name ->
+                        categoryName.value = name
+                        categoryId.value = id
+                        Log.d("updated the values", "updated");
+                    }
+                    showBottomScreen.value = true
+                    addScreenViewModel.getAllCategory()
+                },
+                disable = true,
             )
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Row {
-            Text("Account", color = Color.Black,  modifier = Modifier.width(100.dp))
-            Spacer(modifier=Modifier.width(8.dp))
+            Text("Account", color = Color.Black, modifier = Modifier.width(100.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                account,
-                onDateChange = { newDate -> account = newDate },
-                disable = true
+                accountName,
+                onDateChange = { newAccount -> accountName.value = newAccount },
+                onTextFieldClicked = {
+                    onBottomItemClickState.value = { id, name ->
+                        accountName.value = name
+                        accountId.value = id
+                    }
+                    showBottomScreen.value = true
+                    addScreenViewModel.getAllAccountType()
+                },
+                disable = true,
             )
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
         Row {
-            CustomTextFieldComponent(description, onDateChange = { newDate -> description = newDate }, placeholder = "Description", {
-                if(uploadedUrls.size<=3) {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                        == PackageManager.PERMISSION_GRANTED
-                    ) {
-                        val uri = createImageUri(context)
-                        lastAddedImageUrl = uri
-                        launcher.launch(uri)
+            CustomTextFieldComponent(
+                description,
+                onDateChange = { newDate -> description.value = newDate },
+                placeholder = "Description",
+                onImgClick = {
+                    if (uploadedUrls.size <= 3) {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                            == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            val uri = createImageUri(context)
+                            lastAddedImageUrl = uri
+                            launcher.launch(uri)
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
                     } else {
-                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        Toast.makeText(context, "uploading image limit reached", Toast.LENGTH_SHORT)
+                            .show()
                     }
-                } else {
-                    Toast.makeText(context, "uploading image limit reached", Toast.LENGTH_SHORT).show()
-                }
-            })
+                })
         }
-        Spacer(modifier=Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         Row(
             modifier = Modifier
@@ -228,7 +249,9 @@ fun AddScreen (){
             }
         }
         Button(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
             onClick = {
             },
             colors = ButtonColors(
@@ -240,7 +263,14 @@ fun AddScreen (){
         ) {
             Text("Add", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
-
-
+    }
+    if (showBottomScreen.value) {
+        BottomSheetSelector(
+            uiDate = bottomUiData,
+            onBottomItemClickState,
+            {
+                showBottomScreen.value = false
+            }
+        )
     }
 }
