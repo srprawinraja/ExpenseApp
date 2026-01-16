@@ -34,15 +34,19 @@ import com.example.expenseapp.components.CustomTextFieldComponent
 import com.example.expenseapp.screens.AddScreen
 import com.example.expenseapp.ui.theme.ExpenseAppTheme
 import com.example.expenseapp.utils.createImageUri
+import com.example.expenseapp.viewmodels.AddScreenViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val addScreenViewModel = AddScreenViewModel()
         enableEdgeToEdge()
         setContent {
             ExpenseAppTheme {
-                AddScreen()
+                AddScreen(
+                    addScreenViewModel
+                )
             }
         }
     }
@@ -52,6 +56,5 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun Preview() {
-    AddScreen()
-
+   // AddScreen()
 }
