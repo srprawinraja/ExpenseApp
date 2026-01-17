@@ -1,12 +1,12 @@
-package com.example.expenseapp.data.api.category
+package com.example.expenseapp.data.response.api.accountType
 
 import com.example.expenseapp.data.ui.BottomSheetItem
 
-class Category : ArrayList<CategoryItem>()
+class AccountType : ArrayList<AccountTypeItem>()
 
-fun Category.toBottomUiList(categoryItems: ArrayList<CategoryItem>): ArrayList<BottomSheetItem> {
+fun AccountType.toBottomUiList(accountType: ArrayList<AccountTypeItem>): ArrayList<BottomSheetItem> {
     val bottomSheetItemList = ArrayList<BottomSheetItem>()
-    for (item in categoryItems) {
+    for (item in accountType) {
         val bottomSheetItem = item.toBottomUi(item)
         bottomSheetItemList.add(bottomSheetItem)
     }

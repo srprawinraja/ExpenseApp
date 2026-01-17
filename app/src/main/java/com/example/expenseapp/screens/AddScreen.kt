@@ -23,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -37,27 +38,30 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.expenseapp.components.BottomSheetSelector
 import com.example.expenseapp.components.CustomTextFieldComponent
-import com.example.expenseapp.utils.createImageUri
+import com.example.expenseapp.utils.FileUri
 import com.example.expenseapp.viewmodels.AddScreenViewModel
-import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun AddScreen(addScreenViewModel: AddScreenViewModel) {
+fun AddScreen(navHostController: NavHostController, addScreenViewModel: AddScreenViewModel) {
 
     val bottomUiData = addScreenViewModel.bottomScreenUiState.collectAsState().value
+    val error = addScreenViewModel.error.collectAsState().value
+
     val context = LocalContext.current
-    val current = LocalDateTime.now()
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val current = LocalDate.now()
+    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     val formatted = current.format(formatter)
-    var date = remember { mutableStateOf(formatted) }
-    var title = remember { mutableStateOf("") }
-    var amount = remember { mutableStateOf("") }
-    var description = remember { mutableStateOf("") }
+    val date = remember { mutableStateOf(formatted) }
+    val title = remember { mutableStateOf("") }
+    val amount = remember { mutableStateOf("") }
+    val description = remember { mutableStateOf("") }
     var isIncomeButtonClicked by remember { mutableStateOf(true) }
     val categoryName = remember { mutableStateOf("") }
     val accountName =  remember { mutableStateOf("") }
@@ -83,7 +87,7 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val uri = createImageUri(context)
+            val uri = FileUri.createImageUri(context)
             lastAddedImageUrl = uri
             launcher.launch(uri)
         } else {
@@ -91,6 +95,12 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
         }
     }
 
+        LaunchedEffect(error) {
+            if (error!=null && error.isNotEmpty()) {
+                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                addScreenViewModel.clearError()
+            }
+        }
 
     Column(
         modifier = Modifier
@@ -106,6 +116,7 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
                 modifier = Modifier.weight(1f),
                 onClick = {
                     isIncomeButtonClicked = !isIncomeButtonClicked
+                    navHostController.navigate("Home")
                 },
                 colors = ButtonColors(
                     containerColor = if (isIncomeButtonClicked) Color.Black
@@ -142,7 +153,7 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             CustomTextFieldComponent(
                 date,
                 onDateChange = { newDate -> date.value = newDate },
-                placeholder = "yyyy-MM-dd HH:mm:ss",
+                placeholder = "dd-MM-yyyy",
             )
         }
         Spacer(modifier = Modifier.height(30.dp))
@@ -214,7 +225,7 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                             == PackageManager.PERMISSION_GRANTED
                         ) {
-                            val uri = createImageUri(context)
+                            val uri = FileUri.createImageUri(context)
                             lastAddedImageUrl = uri
                             launcher.launch(uri)
                         } else {
@@ -253,6 +264,16 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
                 .fillMaxWidth()
                 .padding(10.dp),
             onClick = {
+                addScreenViewModel.saveTheDetail(
+                    date = date.value,
+                    title = title.value,
+                    amount = amount.value,
+                    category = categoryId.value,
+                    account = accountId.value,
+                    context = context,
+                    description = description.value,
+                    uris = uploadedUrls,
+                )
             },
             colors = ButtonColors(
                 containerColor = Color.Green,

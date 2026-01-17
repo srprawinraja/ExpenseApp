@@ -50,7 +50,6 @@ fun CustomTextFieldComponent(
             }
             Row (
                 modifier = Modifier.fillMaxWidth().clickable(onClick = {
-                    Log.d("clicked", disable.toString())
                     if(disable) {
                         onTextFieldClicked()
                     }
