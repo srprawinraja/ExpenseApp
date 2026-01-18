@@ -26,10 +26,10 @@ import com.example.expenseapp.R
 
 @Composable
 fun CustomTextFieldComponent(
-    text: MutableState<String>,
+    text: String,
     placeholder: String = "",
     disable: Boolean = false,
-    onDateChange: (String) -> Unit,
+    onDataChange: (String) -> Unit,
     onTextFieldClicked: () -> Unit = {},
     onImgClick: (() -> Unit)? = null
 ) {
@@ -41,7 +41,7 @@ fun CustomTextFieldComponent(
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            if (text.value.isEmpty()) {
+            if (text.isEmpty()) {
                 Text(
                     text = placeholder,
                     color = Color.Gray,
@@ -50,7 +50,6 @@ fun CustomTextFieldComponent(
             }
             Row (
                 modifier = Modifier.fillMaxWidth().clickable(onClick = {
-                    Log.d("clicked", disable.toString())
                     if(disable) {
                         onTextFieldClicked()
                     }
@@ -58,8 +57,8 @@ fun CustomTextFieldComponent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ){
                 BasicTextField(
-                    value = text.value,
-                    onValueChange = { it -> onDateChange(it) },
+                    value = text,
+                    onValueChange = { it -> onDataChange(it) },
                     textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
                     singleLine = onImgClick == null,
                     modifier = Modifier.weight(1f),

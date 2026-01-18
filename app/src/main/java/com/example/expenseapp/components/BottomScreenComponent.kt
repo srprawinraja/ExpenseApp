@@ -62,10 +62,6 @@ fun BottomSheetSelector(
                     }
                 }
 
-                is NetworkResponse.Error -> {
-                    Toast.makeText(context, "Failed to fetch category", Toast.LENGTH_SHORT).show()
-                }
-
                 else -> {
 
                 }

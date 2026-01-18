@@ -3,7 +3,6 @@ package com.example.expenseapp.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,71 +22,99 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.expenseapp.components.BottomSheetSelector
 import com.example.expenseapp.components.CustomTextFieldComponent
-import com.example.expenseapp.utils.createImageUri
+import com.example.expenseapp.data.ui.File
+import com.example.expenseapp.utils.FileUri
 import com.example.expenseapp.viewmodels.AddScreenViewModel
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Composable
-fun AddScreen(addScreenViewModel: AddScreenViewModel) {
-
+fun AddScreen(
+    navHostController: NavHostController,
+    addScreenViewModel: AddScreenViewModel,
+    id: String?
+) {
+    if(id!=null && id!=""){
+        LaunchedEffect(Unit) {
+            addScreenViewModel.getRecordDetail(id)
+        }
+    } else {
+        LaunchedEffect(Unit) {
+            addScreenViewModel.reset()
+        }
+    }
     val bottomUiData = addScreenViewModel.bottomScreenUiState.collectAsState().value
+    var lastAddedImageUrl by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
-    val current = LocalDateTime.now()
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    val formatted = current.format(formatter)
-    var date = remember { mutableStateOf(formatted) }
-    var title = remember { mutableStateOf("") }
-    var amount = remember { mutableStateOf("") }
-    var description = remember { mutableStateOf("") }
-    var isIncomeButtonClicked by remember { mutableStateOf(true) }
-    val categoryName = remember { mutableStateOf("") }
-    val accountName =  remember { mutableStateOf("") }
-    val categoryId = remember { mutableStateOf("") }
-    val accountId = remember { mutableStateOf("") }
     val onBottomItemClickState = remember { mutableStateOf<(String, String) -> Unit>({ _, _ -> }) }
-
     val showBottomScreen = remember {
         mutableStateOf(false)
     }
-    var lastAddedImageUrl by remember { mutableStateOf<Uri?>(null) }
-    val uploadedUrls = remember { mutableStateListOf<Uri>() }
 
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            uploadedUrls.add(lastAddedImageUrl!!)
+            addScreenViewModel.uploadImage.add(File(lastAddedImageUrl))
         }
     }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val uri = createImageUri(context)
+            val uri = FileUri.createImageUri(context)
             lastAddedImageUrl = uri
             launcher.launch(uri)
         } else {
             Toast.makeText(context, "Camera permission is required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /*
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                addScreenViewModel.reset()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }*/
+
+    LaunchedEffect(Unit) {
+        addScreenViewModel.message.collect { text ->
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
+    }
+    if (addScreenViewModel.navigateHome) {
+        LaunchedEffect(Unit) {
+            addScreenViewModel.navigateHome = false
+            navHostController.popBackStack()
         }
     }
 
@@ -105,10 +132,12 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    isIncomeButtonClicked = !isIncomeButtonClicked
+                    addScreenViewModel.categoryName = ""
+                    addScreenViewModel.categoryId = ""
+                    addScreenViewModel.isIncome = !addScreenViewModel.isIncome
                 },
                 colors = ButtonColors(
-                    containerColor = if (isIncomeButtonClicked) Color.Black
+                    containerColor = if (addScreenViewModel.isIncome) Color.Black
                     else Color.White,
                     contentColor = Color.Cyan,
                     disabledContentColor = Color.Cyan,
@@ -120,10 +149,12 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    isIncomeButtonClicked = !isIncomeButtonClicked
+                    addScreenViewModel.categoryName = ""
+                    addScreenViewModel.categoryId = ""
+                    addScreenViewModel.isIncome = !addScreenViewModel.isIncome
                 },
                 colors = ButtonColors(
-                    containerColor = if (isIncomeButtonClicked) Color.White
+                    containerColor = if (addScreenViewModel.isIncome) Color.White
                     else Color.Black,
                     contentColor = Color.Cyan,
                     disabledContentColor = Color.Cyan,
@@ -140,9 +171,9 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Text("Date", color = Color.Black, modifier = Modifier.width(100.dp))
             Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                date,
-                onDateChange = { newDate -> date.value = newDate },
-                placeholder = "yyyy-MM-dd HH:mm:ss",
+                addScreenViewModel.date,
+                onDataChange = { newDate -> addScreenViewModel.date = newDate },
+                placeholder = "yyyy-MM-dd",
             )
         }
         Spacer(modifier = Modifier.height(30.dp))
@@ -150,8 +181,8 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Text("Title", color = Color.Black, modifier = Modifier.width(100.dp))
             Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                title,
-                onDateChange = { newTitle -> title.value = newTitle },
+                addScreenViewModel.title,
+                onDataChange = { newTitle -> addScreenViewModel.title = newTitle },
             )
         }
         Spacer(modifier = Modifier.height(30.dp))
@@ -160,8 +191,8 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Text("Amount", color = Color.Black, modifier = Modifier.width(100.dp))
             Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                amount,
-                onDateChange = { newAmount -> amount.value = newAmount },
+                addScreenViewModel.amount,
+                onDataChange = { newAmount -> addScreenViewModel.amount = newAmount },
             )
         }
         Spacer(modifier = Modifier.height(30.dp))
@@ -170,16 +201,15 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Text("Category", color = Color.Black, modifier = Modifier.width(100.dp))
             Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                categoryName,
-                onDateChange = { newCategory -> categoryName.value = newCategory },
+                addScreenViewModel.categoryName,
+                onDataChange = { newCategory -> addScreenViewModel.categoryName = newCategory },
                 onTextFieldClicked = {
                     onBottomItemClickState.value = { id, name ->
-                        categoryName.value = name
-                        categoryId.value = id
-                        Log.d("updated the values", "updated");
+                        addScreenViewModel.categoryName = name
+                        addScreenViewModel.categoryId = id
                     }
                     showBottomScreen.value = true
-                    addScreenViewModel.getAllCategory()
+                    addScreenViewModel.getAllCategory(addScreenViewModel.isIncome)
                 },
                 disable = true,
             )
@@ -190,12 +220,12 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
             Text("Account", color = Color.Black, modifier = Modifier.width(100.dp))
             Spacer(modifier = Modifier.width(8.dp))
             CustomTextFieldComponent(
-                accountName,
-                onDateChange = { newAccount -> accountName.value = newAccount },
+                addScreenViewModel.accountName,
+                onDataChange = { newAccount -> addScreenViewModel.accountName = newAccount },
                 onTextFieldClicked = {
                     onBottomItemClickState.value = { id, name ->
-                        accountName.value = name
-                        accountId.value = id
+                        addScreenViewModel.accountName = name
+                        addScreenViewModel.accountId = id
                     }
                     showBottomScreen.value = true
                     addScreenViewModel.getAllAccountType()
@@ -206,15 +236,17 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
         Spacer(modifier = Modifier.height(30.dp))
         Row {
             CustomTextFieldComponent(
-                description,
-                onDateChange = { newDate -> description.value = newDate },
+                addScreenViewModel.description,
+                onDataChange = { newDescription ->
+                    addScreenViewModel.description = newDescription
+                },
                 placeholder = "Description",
                 onImgClick = {
-                    if (uploadedUrls.size <= 3) {
+                    if (addScreenViewModel.uploadImage.size < 3) {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                             == PackageManager.PERMISSION_GRANTED
                         ) {
-                            val uri = createImageUri(context)
+                            val uri = FileUri.createImageUri(context)
                             lastAddedImageUrl = uri
                             launcher.launch(uri)
                         } else {
@@ -233,10 +265,11 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            uploadedUrls.forEach { url ->
+            addScreenViewModel.uploadImage.forEach { file ->
+
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(url)
+                        .data(file.url?: file.uri)
                         .crossfade(true)
                         .build(),
                     contentDescription = "Captured Image",
@@ -246,22 +279,71 @@ fun AddScreen(addScreenViewModel: AddScreenViewModel) {
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(8.dp))
                 )
+
             }
         }
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            onClick = {
-            },
-            colors = ButtonColors(
-                containerColor = Color.Green,
-                contentColor = Color.Black,
-                disabledContentColor = Color.Black,
-                disabledContainerColor = Color.Green,
-            )
-        ) {
-            Text("Add", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        if(id!=null && id=="") {
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                onClick = {
+                    addScreenViewModel.saveTheDetail(
+                        context = context
+                    )
+                },
+                colors = ButtonColors(
+                    containerColor = Color.Green,
+                    contentColor = Color.Black,
+                    disabledContentColor = Color.Black,
+                    disabledContainerColor = Color.Green,
+                )
+            ) {
+                Text("Add", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ){
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp).weight(1f),
+                    onClick = {
+                        addScreenViewModel.updateRecord(
+                            context = context,
+                            id = id!!
+                        )
+                    },
+                    colors = ButtonColors(
+                        containerColor = Color.Green,
+                        contentColor = Color.Black,
+                        disabledContentColor = Color.Black,
+                        disabledContainerColor = Color.Green,
+                    )
+                ) {
+                    Text("Update", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+                Spacer(modifier = Modifier.padding(10.dp))
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp).weight(1f),
+                    onClick = {
+                        addScreenViewModel.deleteRecord(
+                            id = id!!
+                        )
+                    },
+                    colors = ButtonColors(
+                        containerColor = Color.Green,
+                        contentColor = Color.Black,
+                        disabledContentColor = Color.Black,
+                        disabledContainerColor = Color.Green,
+                    )
+                ) {
+                    Text("Delete", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+            }
         }
     }
     if (showBottomScreen.value) {
