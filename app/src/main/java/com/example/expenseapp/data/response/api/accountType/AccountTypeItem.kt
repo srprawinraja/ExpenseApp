@@ -9,7 +9,8 @@ data class AccountTypeItem(
     val createdAt: String,
     val updatedAt: String
 )
-fun AccountTypeItem.toBottomUi(accountTypeItem: AccountTypeItem) = BottomSheetItem(
-    id = accountTypeItem._id,
-    itemName = accountTypeItem.accountTypeName
-)
+fun AccountTypeItem.toBottomUi(): BottomSheetItem =
+    BottomSheetItem(
+        id = _id,
+        itemName = accountTypeName
+    )

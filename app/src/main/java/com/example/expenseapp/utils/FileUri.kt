@@ -26,17 +26,20 @@ object FileUri {
         return uri
     }
 
-    fun uriToFile(context: Context, uris: List<Uri>): List<File> {
+    fun uriToFile(context: Context, filesStored: List<com.example.expenseapp.data.ui.File>): List<File> {
         val files = mutableListOf<File>()
-        for (uri in uris) {
-            val inputStream = context.contentResolver.openInputStream(uri) ?: continue
-            val file = File.createTempFile("upload_", ".png", context.cacheDir)
-            inputStream.use { input ->
-                file.outputStream().use { output ->
-                    input.copyTo(output)
+        for (file in filesStored) {
+            val uri = file.uri
+            if(uri!=null) {
+                val inputStream = context.contentResolver.openInputStream(uri) ?: continue
+                val file = File.createTempFile("upload_", ".png", context.cacheDir)
+                inputStream.use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
+                files.add(file)
             }
-            files.add(file)
         }
         return files
     }
@@ -50,7 +53,7 @@ object FileUri {
 
             parts.add(
                 MultipartBody.Part.createFormData(
-                    name = "files",   // SAME as upload.array("files")
+                    name = "files",
                     filename = file.name,
                     body = requestBody
                 )

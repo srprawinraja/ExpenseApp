@@ -4,11 +4,6 @@ import com.example.expenseapp.data.ui.BottomSheetItem
 
 class AccountType : ArrayList<AccountTypeItem>()
 
-fun AccountType.toBottomUiList(accountType: ArrayList<AccountTypeItem>): ArrayList<BottomSheetItem> {
-    val bottomSheetItemList = ArrayList<BottomSheetItem>()
-    for (item in accountType) {
-        val bottomSheetItem = item.toBottomUi(item)
-        bottomSheetItemList.add(bottomSheetItem)
-    }
-    return bottomSheetItemList
+fun AccountType.toBottomUiList(): List<BottomSheetItem> {
+    return map { it.toBottomUi() }
 }

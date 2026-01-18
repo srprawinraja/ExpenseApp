@@ -11,7 +11,8 @@ data class CategoryItem(
     val updatedAt: String
 )
 
-fun CategoryItem.toBottomUi(categoryItem: CategoryItem) = BottomSheetItem(
-    id = categoryItem._id,
-    itemName = categoryItem.categoryName
-)
+fun CategoryItem.toBottomUi(): BottomSheetItem =
+    BottomSheetItem(
+        id = _id,
+        itemName = categoryName
+    )
