@@ -187,7 +187,6 @@ class AddScreenViewModel : ViewModel() {
     fun getRecordDetail(id: String){
         viewModelScope.launch {
             try {
-                reset()
                 val response = apiService.getRecordDetail(id)
                 if(response.isSuccessful){
                     val data = response.body()

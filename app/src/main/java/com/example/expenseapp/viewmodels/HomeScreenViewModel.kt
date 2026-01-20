@@ -3,18 +3,15 @@ package com.example.expenseapp.viewmodels
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.expenseapp.api.NetworkResponse
 import com.example.expenseapp.api.RetroFitInstance
-import com.example.expenseapp.data.response.api.category.toBottomUiList
 import com.example.expenseapp.data.response.api.record.date.DateSummary
 import com.example.expenseapp.data.response.api.record.month.MonthSummary
-import com.example.expenseapp.data.ui.BottomSheetItem
-import com.example.expenseapp.db.record.RecordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.time.YearMonth
@@ -44,17 +41,15 @@ class HomeScreenViewModel: ViewModel() {
         MutableStateFlow<NetworkResponse<MonthSummary>>(NetworkResponse.Empty)
     val monthUiState: MutableStateFlow<NetworkResponse<MonthSummary>> =
         _monthUiState
-    private val _dateUiState =
-        MutableStateFlow<NetworkResponse<DateSummary>>(NetworkResponse.Empty)
-    val dateUiState: MutableStateFlow<NetworkResponse<DateSummary>> =
-        _dateUiState
+    private val _dateUiStateMap = mutableStateMapOf<String, NetworkResponse<DateSummary>>()
+    val dateUiStateMap: Map<String, NetworkResponse<DateSummary>> = _dateUiStateMap
 
     fun reset(){
         _monthIncome = "0"
         _monthExpense = "0"
         _monthTotal = "0"
         _monthUiState.value = NetworkResponse.Empty
-        _dateUiState.value = NetworkResponse.Empty
+        _dateUiStateMap.clear()
     }
 
     fun previousMonth() {
@@ -97,32 +92,32 @@ class HomeScreenViewModel: ViewModel() {
             }
         }
     }
-    fun getAllDateData(date: String){
-
+    fun getAllDateData(date: String) {
         viewModelScope.launch {
             try {
-                _dateUiState.value = NetworkResponse.Loading
+                // Set loading for this specific date
+                _dateUiStateMap[date] = NetworkResponse.Loading
 
                 val response = apiService.getDateSummary(
                     date = date,
                     page = page,
                     limit = limit
                 )
+
                 if (response.isSuccessful) {
                     val data = response.body()
                     if (data != null) {
-                        _dateUiState.value = NetworkResponse.Success(data)
+                        _dateUiStateMap[date] = NetworkResponse.Success(data)
+                        Log.d(TAG, "$date $data")
                     } else {
                         Log.d(TAG, "getAllDateData failed: body is null")
                     }
                 } else {
                     Log.d(TAG, "getAllDateData failed: ${response.errorBody()}")
-
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "getAllDateData failed: ${e}")
+                Log.d(TAG, "getAllDateData failed: $e")
             }
         }
     }
-
 }
