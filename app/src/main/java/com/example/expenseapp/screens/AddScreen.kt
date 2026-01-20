@@ -28,19 +28,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -56,15 +51,13 @@ fun AddScreen(
     addScreenViewModel: AddScreenViewModel,
     id: String?
 ) {
-    if(id!=null && id!=""){
-        LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
+        addScreenViewModel.reset()
+        if(id!=null && id!="") {
             addScreenViewModel.getRecordDetail(id)
         }
-    } else {
-        LaunchedEffect(Unit) {
-            addScreenViewModel.reset()
-        }
     }
+
     val bottomUiData = addScreenViewModel.bottomScreenUiState.collectAsState().value
     var lastAddedImageUrl by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current

@@ -1,5 +1,6 @@
 package com.example.expenseapp.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,7 +43,6 @@ import com.example.expenseapp.viewmodels.HomeScreenViewModel
 @Composable
 fun HomeScreen(navController: NavHostController, homeScreenViewModel: HomeScreenViewModel) {
     val monthUiState = homeScreenViewModel.monthUiState.collectAsState().value
-    val dayUiState = homeScreenViewModel.dateUiState.collectAsState().value
     LaunchedEffect(homeScreenViewModel.currentMonthName.value) {
         homeScreenViewModel.reset()
         homeScreenViewModel.getAllMonthlyData()
@@ -130,40 +130,41 @@ fun HomeScreen(navController: NavHostController, homeScreenViewModel: HomeScreen
                         expense = dateDetail.expense.toString(),
                         balance = dateDetail.total.toString()
                     ) {
-
-                        when(dayUiState) {
+                        val state = homeScreenViewModel.dateUiStateMap[dateDetail.date]
+                        when (state) {
                             is NetworkResponse.Success -> {
-                                for(record in dayUiState.data.records) {
+                                for (record in state.data.records) {
                                     RecordSummary(
                                         record.id,
                                         record.title,
                                         method = record.accountTypeName,
-                                        amount = (if(record.isIncome) ""
-                                                else "-") +record.amount.toString(),
-                                        onClick = { id ->
-                                            navController.navigate("Add/$id")
-                                        }
+                                        amount = (if (record.isIncome) "" else "-") + record.amount.toString(),
+                                        onClick = { id -> navController.navigate("Add/$id") }
                                     )
                                 }
                             }
-                            NetworkResponse.Loading ->{
-                                Column (
+
+                            is NetworkResponse.Loading -> {
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.CenterHorizontally
-                                ){
+                                ) {
                                     CircularProgressIndicator()
                                 }
                             }
-                            else -> {
 
+                            else -> {
+                                // State not yet initialized
+                                CircularProgressIndicator()
                             }
                         }
                     }
                 }
             }
-            else -> {
+            else ->{
 
             }
+
         }
 
         Spacer(modifier = Modifier.weight(1f))
